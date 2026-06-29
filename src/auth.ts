@@ -39,7 +39,7 @@ function buildSeedUsers(): User[] {
       id: SEED_IDS.admin,
       email: PRIMARY_ADMIN_EMAIL,
       username: "Admin",
-      password: "admin123",
+      password: "Admin1234?",
       status: "active",
       role: "admin",
       createdAt: daysAgo(120),

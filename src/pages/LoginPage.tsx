@@ -273,7 +273,7 @@ export default function LoginPage() {
               </div>
               <div>
                 Admin : <span className="font-mono">admin@email.com</span> /{" "}
-                <span className="font-mono">admin123</span>
+                <span className="font-mono">Admin1234?</span>
               </div>
               <div>
                 Utilisateur : <span className="font-mono">marie@email.com</span>{" "}

@@ -6,7 +6,7 @@ const isDev = !app.isPackaged;
 
 // Keep all app data (incl. localStorage) under a stable per-app folder so
 // notes persist across launches and updates.
-app.setName("StickyFlow");
+app.setName("MDFlow");
 
 let mainWindow = null;
 
@@ -17,7 +17,7 @@ function createWindow() {
     minWidth: 940,
     minHeight: 620,
     backgroundColor: "#f6f8fb",
-    title: "StickyFlow",
+    title: "MDFlow",
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

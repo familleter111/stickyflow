@@ -42,7 +42,7 @@ export default function AdminLayout({ active, children }: Props) {
           </div>
           <div>
             <span className="block text-xl font-extrabold leading-none tracking-tight text-slate-800">
-              StickyFlow
+              MDFlow
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">
               Admin

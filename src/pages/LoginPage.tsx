@@ -133,7 +133,7 @@ export default function LoginPage() {
               Organisez vos idées, sans effort.
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              StickyFlow réunit vos notes, checklists et rappels dans un espace
+              MDFlow réunit vos notes, checklists et rappels dans un espace
               clair et rapide. Connectez-vous pour retrouver votre tableau.
             </p>
           </div>
@@ -285,7 +285,7 @@ export default function LoginPage() {
           <div className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-slate-400">
             <ShieldCheck className="h-4 w-4 text-blue-400" />
             <span>
-              Vos données sont chiffrées et sécurisées. StickyFlow respecte votre
+              Vos données sont chiffrées et sécurisées. MDFlow respecte votre
               confidentialité.
             </span>
           </div>

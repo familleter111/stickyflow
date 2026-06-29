@@ -44,7 +44,7 @@ export default function Sidebar({ onOpenWidget }: Props) {
           <span className="text-lg">📝</span>
         </div>
         <span className="text-xl font-extrabold tracking-tight text-slate-800">
-          StickyFlow
+          MDFlow
         </span>
       </div>
 

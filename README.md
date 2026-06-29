@@ -1,4 +1,4 @@
-# StickyFlow 📝
+# MDFlow 📝
 
 A modern, SaaS-style Sticky Notes app inspired by Microsoft Sticky Notes — with inline status changes, in-card checklists, and a resizable floating desktop-style widget.
 
@@ -21,7 +21,7 @@ npm run preview  # preview the build
 - **Delete flow** — confirmation modal → moves to Corbeille → toast with **Annuler** (undo).
 - **Favorites, pin, archive, color change, trash + restore.**
 - **Floating widget** — draggable + resizable (drag the bottom-right corner) compact panel with recent notes & checklists.
-- **Persistence** — notes live in `localStorage` (`stickyflow.notes.v1`); demo notes seed on first load only.
+- **Persistence** — notes live in `localStorage` (`mdflow.notes.v1`); demo notes seed on first load only.
 
 ## Data model
 See [src/types.ts](src/types.ts) — `Note`, `ChecklistItem`, `NoteStatus` (`todo` / `in_progress` / `done`).

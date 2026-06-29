@@ -1,10 +1,10 @@
 {
-  "name": "stickyflow",
+  "name": "mdflow",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "StickyFlow - notes adhésives modernes",
-  "author": "StickyFlow",
+  "description": "MDFlow - notes adhésives modernes",
+  "author": "MDFlow",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
-    "pack": "npm run build && electron-packager . StickyFlow --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=\"/src$\" --ignore=\"/release\" --ignore=\"/\\.\" --ignore=\"tsconfig\" --ignore=\"vite\\.config\" --ignore=\"tailwind\\.config\" --ignore=\"postcss\\.config\"",
+    "pack": "npm run build && electron-packager . MDFlow --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=\"/src$\" --ignore=\"/release\" --ignore=\"/\\.\" --ignore=\"tsconfig\" --ignore=\"vite\\.config\" --ignore=\"tailwind\\.config\" --ignore=\"postcss\\.config\"",
     "dist": "npm run build && electron-builder --win"
   },
   "dependencies": {
@@ -38,8 +38,8 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "com.stickyflow.app",
-    "productName": "StickyFlow",
+    "appId": "com.mdflow.app",
+    "productName": "MDFlow",
     "directories": {
       "output": "release"
     },
@@ -70,10 +70,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "StickyFlow"
+      "shortcutName": "MDFlow"
     },
     "portable": {
-      "artifactName": "StickyFlow-${version}-portable.exe"
+      "artifactName": "MDFlow-${version}-portable.exe"
     }
   }
 }

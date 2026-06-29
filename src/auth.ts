@@ -15,8 +15,8 @@ import { PRIMARY_ADMIN_EMAIL } from "./types";
  *    session cookies, password hashing, and access-control middleware.
  * ------------------------------------------------------------------ */
 
-const USERS_KEY = "stickyflow_users";
-const SESSION_KEY = "stickyflow_auth_session";
+const USERS_KEY = "mdflow_users";
+const SESSION_KEY = "mdflow_auth_session";
 
 // Stable ids so seeded demo notes can reference their owners.
 export const SEED_IDS = {

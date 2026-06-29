@@ -74,7 +74,7 @@ export default function FloatingWidget({ onClose, onNewNote }: Props) {
             📝
           </div>
           <span className="text-sm font-bold text-slate-800">
-            StickyFlow Notes
+            MDFlow Notes
           </span>
         </div>
         <div className="flex items-center gap-1 text-slate-400">

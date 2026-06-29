@@ -9,7 +9,7 @@ import type {
 import { STATUS_ORDER } from "./types";
 import { buildSeedNotes } from "./seed";
 
-const STORAGE_KEY = "stickyflow_notes";
+const STORAGE_KEY = "mdflow_notes";
 
 const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

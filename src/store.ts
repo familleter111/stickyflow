@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { create } from "zustand";
 import type {
   Note,
@@ -301,12 +302,21 @@ export function visibleNotes(st: State): Note[] {
   return list;
 }
 
+/** Stable empty reference so the "no user" case never returns a fresh array. */
+const NO_NOTES: Note[] = [];
+
 /** Hook: the current user's notes (already isolated by userId). */
 export function useMyNotes(): Note[] {
-  return useStore((st) =>
-    st.currentUserId
-      ? st.notes.filter((n) => n.userId === st.currentUserId)
-      : [],
+  // Select stable values (the notes array ref + a primitive) and derive with
+  // useMemo. Returning a freshly-built array straight from the selector would
+  // make zustand's useSyncExternalStore see a new snapshot on every render and
+  // throw "Maximum update depth exceeded".
+  const notes = useStore((s) => s.notes);
+  const currentUserId = useStore((s) => s.currentUserId);
+  return useMemo(
+    () =>
+      currentUserId ? notes.filter((n) => n.userId === currentUserId) : NO_NOTES,
+    [notes, currentUserId],
   );
 }
 

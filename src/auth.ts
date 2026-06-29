@@ -1,19 +1,18 @@
 import { create } from "zustand";
 import type { User, AuthSession, UserStatus, UserRole } from "./types";
 import { PRIMARY_ADMIN_EMAIL } from "./types";
-import { readUsers, writeUsers } from "./storage";
+import { apiLogin, saveUsers as persistUsers } from "./storage";
 
 /* ------------------------------------------------------------------ *
  * SECURITY NOTE — read before shipping
  * ------------------------------------------------------------------ *
- * This is a frontend / localStorage MVP. It is NOT secure for
- * production:
- *  - Auth state lives in localStorage/sessionStorage and can be read or
- *    tampered with by anyone on the device.
+ * Users now live in a real SQLite database behind the API (see server/),
+ * but this is still a demo:
  *  - Passwords are stored in PLAIN TEXT. In a real app they must be
  *    hashed (bcrypt/argon2) server-side and never sent back to the client.
- *  - Real authentication should use a backend with JWT or HTTP-only
- *    session cookies, password hashing, and access-control middleware.
+ *  - The session lives in localStorage/sessionStorage and is not a signed
+ *    token. Real auth should use JWT or HTTP-only session cookies plus
+ *    access-control middleware on every endpoint.
  * ------------------------------------------------------------------ */
 
 const SESSION_KEY = "mdflow_auth_session";
@@ -30,81 +29,10 @@ const uid = () =>
   "u_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 const nowISO = () => new Date().toISOString();
-const daysAgo = (d: number) =>
-  new Date(Date.now() - d * 86400000).toISOString();
 
-function buildSeedUsers(): User[] {
-  return [
-    {
-      id: SEED_IDS.admin,
-      email: PRIMARY_ADMIN_EMAIL,
-      username: "Admin",
-      password: "Admin1234?",
-      status: "active",
-      role: "admin",
-      createdAt: daysAgo(120),
-      updatedAt: daysAgo(120),
-    },
-    {
-      id: SEED_IDS.marie,
-      email: "marie@email.com",
-      username: "marie",
-      password: "marie123",
-      status: "active",
-      role: "user",
-      createdAt: daysAgo(60),
-      updatedAt: daysAgo(12),
-    },
-    {
-      id: SEED_IDS.lucas,
-      email: "lucas@email.com",
-      username: "lucas",
-      password: "lucas123",
-      status: "active",
-      role: "user",
-      createdAt: daysAgo(30),
-      updatedAt: daysAgo(5),
-    },
-    {
-      id: SEED_IDS.sophie,
-      email: "sophie@email.com",
-      username: "sophie",
-      password: "sophie123",
-      status: "inactive",
-      role: "user",
-      createdAt: daysAgo(8),
-      updatedAt: daysAgo(2),
-    },
-  ];
-}
-
-function loadUsers(): User[] {
-  try {
-    const raw = readUsers();
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length) {
-        // Ensure the primary admin always exists (don't reset other data).
-        const hasAdmin = parsed.some(
-          (u: User) => u.email === PRIMARY_ADMIN_EMAIL,
-        );
-        if (!hasAdmin) {
-          parsed.unshift(buildSeedUsers()[0]);
-          saveUsers(parsed);
-        }
-        return parsed as User[];
-      }
-    }
-  } catch {
-    /* ignore corrupt storage */
-  }
-  const seed = buildSeedUsers();
-  saveUsers(seed);
-  return seed;
-}
-
+// Persist the whole list to the database (fire-and-forget).
 function saveUsers(users: User[]) {
-  writeUsers(JSON.stringify(users));
+  persistUsers(users);
 }
 
 function loadSession(): AuthSession | null {
@@ -144,6 +72,8 @@ export type CreateResult = { ok: true; user: User } | { ok: false; error: string
 
 type UsersState = {
   users: User[];
+  /** Replace the list with data fetched from the server (startup hydration). */
+  setUsers: (users: User[]) => void;
   emailExists: (email: string, exceptId?: string) => boolean;
   getById: (id: string) => User | undefined;
   createUser: (draft: UserDraft) => CreateResult;
@@ -153,7 +83,10 @@ type UsersState = {
 };
 
 export const useUsersStore = create<UsersState>((set, get) => ({
-  users: loadUsers(),
+  // Empty until hydrated from the database (see src/bootstrap.ts).
+  users: [],
+
+  setUsers: (users) => set({ users }),
 
   emailExists: (email, exceptId) =>
     get().users.some(
@@ -254,7 +187,11 @@ export type LoginResult =
 
 type AuthState = {
   session: AuthSession | null;
-  login: (email: string, password: string, rememberMe: boolean) => LoginResult;
+  login: (
+    email: string,
+    password: string,
+    rememberMe: boolean,
+  ) => Promise<LoginResult>;
   logout: () => void;
   /** Returns the current valid user, or null (also logs out if invalid). */
   refreshSession: () => User | null;
@@ -263,24 +200,20 @@ type AuthState = {
 export const useAuthStore = create<AuthState>((set, get) => ({
   session: loadSession(),
 
-  login: (email, password, rememberMe) => {
-    const users = useUsersStore.getState().users;
-    const user = users.find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-    );
-    // Generic message so we don't reveal which field was wrong.
-    // Trim both sides so invisible leading/trailing whitespace (e.g. from a
-    // stray space when the account was created) never causes a silent fail.
-    if (!user || user.password.trim() !== password.trim()) {
-      return { ok: false, error: "Email ou mot de passe incorrect." };
+  // Authoritative check against the database, so newly created accounts
+  // always work regardless of what this client has cached in memory.
+  login: async (email, password, rememberMe) => {
+    const result = await apiLogin(email, password);
+    if (!result.ok) return { ok: false, error: result.error };
+
+    const user = result.user;
+    // Make sure the logged-in user is available to guards/useCurrentUser
+    // even if it was created after this client last hydrated.
+    const store = useUsersStore.getState();
+    if (!store.users.some((u) => u.id === user.id)) {
+      store.setUsers([...store.users, user]);
     }
-    if (user.status === "inactive") {
-      return {
-        ok: false,
-        error:
-          "Votre compte est désactivé. Veuillez contacter l'administrateur.",
-      };
-    }
+
     const session: AuthSession = {
       userId: user.id,
       email: user.email,

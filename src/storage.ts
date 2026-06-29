@@ -1,122 +1,114 @@
 /* ------------------------------------------------------------------ *
- * Storage layer.
+ * Storage layer — talks to the MDFlow backend (Node + SQLite).
  *
- * In the Electron build the renderer talks to the main process (see
- * electron/preload.cjs) and data is persisted as plain .txt files:
- *   <userData>/data/users.txt          -> the account list
- *   <userData>/data/notes_<userId>.txt -> one file per user's notes
+ * Data lives in a real SQLite database served over HTTP (see server/).
+ * The frontend fetches users/notes on startup and pushes the full list
+ * back whenever something changes.
  *
- * In a plain browser (e.g. `npm run dev` without Electron) there is no
- * disk access, so we transparently fall back to localStorage.
- *
- * Migration: the app used to be called "StickyFlow" and stored data under
- * `stickyflow_*` keys. When the current storage is empty we transparently
- * recover any data left under those legacy keys so accounts/notes created
- * before the rename are not lost.
+ * localStorage is used only as an offline cache: if the API is briefly
+ * unreachable we fall back to the last data we saw so the UI still works.
  * ------------------------------------------------------------------ */
+import type { User, Note } from "./types";
 
-type StoreBridge = {
-  readUsers: () => string | null;
-  writeUsers: (data: string) => void;
-  readAllNotes: () => string | null;
-  writeAllNotes: (data: string) => void;
-};
+// Relative base: works behind the Vite dev proxy and when the API serves
+// the built app from the same origin.
+const API = "/api";
 
-const bridge: StoreBridge | undefined =
-  typeof window !== "undefined"
-    ? (window as unknown as { mdflowStore?: StoreBridge }).mdflowStore
-    : undefined;
+const USERS_CACHE = "mdflow_users";
+const NOTES_CACHE = "mdflow_notes";
 
-/** True when notes/users are persisted to real .txt files (Electron). */
-export const usesFileStorage = !!bridge;
-
-const USERS_KEY = "mdflow_users";
-const NOTES_KEY = "mdflow_notes";
-
-// Legacy localStorage keys, newest first, checked when migrating.
-const LEGACY_USERS = ["mdflow_users", "stickyflow_users"];
-const LEGACY_NOTES = ["mdflow_notes", "stickyflow_notes"];
-
-function localGet(key: string): string | null {
+function cacheGet<T>(key: string): T | null {
   try {
-    return localStorage.getItem(key);
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
   }
 }
 
-function localSet(key: string, data: string): void {
+function cacheSet(key: string, value: unknown): void {
   try {
-    localStorage.setItem(key, data);
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* ignore */
+    /* ignore quota/availability errors */
   }
 }
 
-/** First non-empty value among the given localStorage keys. */
-function firstLegacy(keys: string[]): string | null {
-  for (const k of keys) {
-    const v = localGet(k);
-    if (v) return v;
+/* ----------------------------- reads ----------------------------- */
+
+export async function fetchUsers(): Promise<User[]> {
+  try {
+    const res = await fetch(`${API}/users`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const users = (await res.json()) as User[];
+    cacheSet(USERS_CACHE, users);
+    return users;
+  } catch (err) {
+    console.error("[mdflow] fetchUsers failed, using cached data:", err);
+    return cacheGet<User[]>(USERS_CACHE) ?? [];
   }
-  return null;
 }
 
-export function readUsers(): string | null {
-  if (bridge) {
-    const current = bridge.readUsers();
-    if (current) return current;
-    // Recover data from a pre-file-storage / pre-rename localStorage.
-    const legacy = firstLegacy(LEGACY_USERS);
-    if (legacy) {
-      bridge.writeUsers(legacy);
-      return legacy;
-    }
-    return null;
+export async function fetchNotes(): Promise<Note[]> {
+  try {
+    const res = await fetch(`${API}/notes`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const notes = (await res.json()) as Note[];
+    cacheSet(NOTES_CACHE, notes);
+    return notes;
+  } catch (err) {
+    console.error("[mdflow] fetchNotes failed, using cached data:", err);
+    return cacheGet<Note[]>(NOTES_CACHE) ?? [];
   }
-  const current = localGet(USERS_KEY);
-  if (current) return current;
-  const legacy = firstLegacy(LEGACY_USERS);
-  if (legacy) {
-    localSet(USERS_KEY, legacy);
-    return legacy;
-  }
-  return null;
 }
 
-export function writeUsers(data: string): void {
-  if (bridge) {
-    bridge.writeUsers(data);
-    return;
-  }
-  localSet(USERS_KEY, data);
+/* ----------------------------- writes ---------------------------- */
+// Fire-and-forget: the in-memory store is updated immediately for a snappy
+// UI; persistence to the database happens in the background.
+
+export function saveUsers(users: User[]): void {
+  cacheSet(USERS_CACHE, users);
+  void put(`${API}/users`, users);
 }
 
-export function readNotes(): string | null {
-  if (bridge) {
-    const current = bridge.readAllNotes();
-    if (current) return current;
-    const legacy = firstLegacy(LEGACY_NOTES);
-    if (legacy) {
-      bridge.writeAllNotes(legacy);
-      return legacy;
-    }
-    return null;
-  }
-  const current = localGet(NOTES_KEY);
-  if (current) return current;
-  const legacy = firstLegacy(LEGACY_NOTES);
-  if (legacy) {
-    localSet(NOTES_KEY, legacy);
-    return legacy;
-  }
-  return null;
+export function saveNotes(notes: Note[]): void {
+  cacheSet(NOTES_CACHE, notes);
+  void put(`${API}/notes`, notes);
 }
 
-export function writeNotes(data: string): void {
-  if (bridge) {
-    bridge.writeAllNotes(data);
-    return;
+async function put(url: string, body: unknown): Promise<void> {
+  try {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    console.error(`[mdflow] save failed (${url}):`, err);
   }
-  localSet(NOTES_KEY, data);
+}
+
+/* ----------------------------- login ----------------------------- */
+
+export type ApiLoginResult =
+  | { ok: true; user: User }
+  | { ok: false; error: string };
+
+/** Authenticate against the database. */
+export async function apiLogin(
+  email: string,
+  password: string,
+): Promise<ApiLoginResult> {
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return (await res.json()) as ApiLoginResult;
+  } catch (err) {
+    console.error("[mdflow] login request failed:", err);
+    return { ok: false, error: "Serveur indisponible. Réessayez." };
+  }
 }

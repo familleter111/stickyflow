@@ -19,3 +19,9 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Local SQLite database (created at runtime by the server)
+server/*.db
+server/*.db-journal
+server/*.db-wal
+server/*.db-shm

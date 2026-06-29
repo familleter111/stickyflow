@@ -37,7 +37,7 @@ export default function LoginPage() {
     }
   }, [currentUser, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -51,7 +51,7 @@ export default function LoginPage() {
     }
 
     setSubmitting(true);
-    const result = login(email, password, remember);
+    const result = await login(email, password, remember);
     setSubmitting(false);
 
     if (!result.ok) {

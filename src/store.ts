@@ -7,29 +7,14 @@ import type {
   ViewKey,
 } from "./types";
 import { STATUS_ORDER } from "./types";
-import { buildSeedNotes } from "./seed";
-import { readNotes, writeNotes } from "./storage";
+import { saveNotes } from "./storage";
 
 const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-function loadNotes(): Note[] {
-  try {
-    const raw = readNotes();
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed as Note[];
-    }
-  } catch {
-    /* ignore corrupt storage */
-  }
-  const seed = buildSeedNotes();
-  persist(seed);
-  return seed;
-}
-
+// Persist the whole collection to the database (fire-and-forget).
 function persist(notes: Note[]) {
-  writeNotes(JSON.stringify(notes));
+  saveNotes(notes);
 }
 
 export type NoteDraft = Omit<Note, "id" | "createdAt" | "updatedAt">;
@@ -54,6 +39,8 @@ type State = {
   sortDir: "asc" | "desc";
   toasts: Toast[];
 
+  /** Replace all notes with data fetched from the server (startup hydration). */
+  setNotes: (notes: Note[]) => void;
   setCurrentUser: (userId: string | null) => void;
   getNotesByUser: (userId: string) => Note[];
   deleteUserNotes: (userId: string) => void;
@@ -91,7 +78,8 @@ function touch(notes: Note[], id: string, patch: Partial<Note>): Note[] {
 }
 
 export const useStore = create<State>((set, get) => ({
-  notes: loadNotes(),
+  // Empty until hydrated from the database (see src/bootstrap.ts).
+  notes: [],
   currentUserId: null,
   view: "all",
   search: "",
@@ -100,6 +88,7 @@ export const useStore = create<State>((set, get) => ({
   sortDir: "desc",
   toasts: [],
 
+  setNotes: (notes) => set({ notes }),
   setCurrentUser: (userId) => set({ currentUserId: userId }),
 
   getNotesByUser: (userId) =>

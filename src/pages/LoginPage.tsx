@@ -265,21 +265,6 @@ export default function LoginPage() {
                 {submitting ? "Connexion…" : "Se connecter"}
               </button>
             </form>
-
-            {/* Demo credentials helper */}
-            <div className="mt-6 rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-xs text-slate-500">
-              <div className="mb-1 font-semibold text-slate-600">
-                Comptes de démonstration
-              </div>
-              <div>
-                Admin : <span className="font-mono">admin@email.com</span> /{" "}
-                <span className="font-mono">Admin1234?</span>
-              </div>
-              <div>
-                Utilisateur : <span className="font-mono">marie@email.com</span>{" "}
-                / <span className="font-mono">marie123</span>
-              </div>
-            </div>
           </div>
 
           <div className="mt-5 flex items-center justify-center gap-2 text-center text-xs text-slate-400">

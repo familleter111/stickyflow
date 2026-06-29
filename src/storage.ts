@@ -8,6 +8,11 @@
  *
  * In a plain browser (e.g. `npm run dev` without Electron) there is no
  * disk access, so we transparently fall back to localStorage.
+ *
+ * Migration: the app used to be called "StickyFlow" and stored data under
+ * `stickyflow_*` keys. When the current storage is empty we transparently
+ * recover any data left under those legacy keys so accounts/notes created
+ * before the rename are not lost.
  * ------------------------------------------------------------------ */
 
 type StoreBridge = {
@@ -28,13 +33,55 @@ export const usesFileStorage = !!bridge;
 const USERS_KEY = "mdflow_users";
 const NOTES_KEY = "mdflow_notes";
 
-export function readUsers(): string | null {
-  if (bridge) return bridge.readUsers();
+// Legacy localStorage keys, newest first, checked when migrating.
+const LEGACY_USERS = ["mdflow_users", "stickyflow_users"];
+const LEGACY_NOTES = ["mdflow_notes", "stickyflow_notes"];
+
+function localGet(key: string): string | null {
   try {
-    return localStorage.getItem(USERS_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
+}
+
+function localSet(key: string, data: string): void {
+  try {
+    localStorage.setItem(key, data);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** First non-empty value among the given localStorage keys. */
+function firstLegacy(keys: string[]): string | null {
+  for (const k of keys) {
+    const v = localGet(k);
+    if (v) return v;
+  }
+  return null;
+}
+
+export function readUsers(): string | null {
+  if (bridge) {
+    const current = bridge.readUsers();
+    if (current) return current;
+    // Recover data from a pre-file-storage / pre-rename localStorage.
+    const legacy = firstLegacy(LEGACY_USERS);
+    if (legacy) {
+      bridge.writeUsers(legacy);
+      return legacy;
+    }
+    return null;
+  }
+  const current = localGet(USERS_KEY);
+  if (current) return current;
+  const legacy = firstLegacy(LEGACY_USERS);
+  if (legacy) {
+    localSet(USERS_KEY, legacy);
+    return legacy;
+  }
+  return null;
 }
 
 export function writeUsers(data: string): void {
@@ -42,20 +89,28 @@ export function writeUsers(data: string): void {
     bridge.writeUsers(data);
     return;
   }
-  try {
-    localStorage.setItem(USERS_KEY, data);
-  } catch {
-    /* ignore */
-  }
+  localSet(USERS_KEY, data);
 }
 
 export function readNotes(): string | null {
-  if (bridge) return bridge.readAllNotes();
-  try {
-    return localStorage.getItem(NOTES_KEY);
-  } catch {
+  if (bridge) {
+    const current = bridge.readAllNotes();
+    if (current) return current;
+    const legacy = firstLegacy(LEGACY_NOTES);
+    if (legacy) {
+      bridge.writeAllNotes(legacy);
+      return legacy;
+    }
     return null;
   }
+  const current = localGet(NOTES_KEY);
+  if (current) return current;
+  const legacy = firstLegacy(LEGACY_NOTES);
+  if (legacy) {
+    localSet(NOTES_KEY, legacy);
+    return legacy;
+  }
+  return null;
 }
 
 export function writeNotes(data: string): void {
@@ -63,9 +118,5 @@ export function writeNotes(data: string): void {
     bridge.writeAllNotes(data);
     return;
   }
-  try {
-    localStorage.setItem(NOTES_KEY, data);
-  } catch {
-    /* ignore */
-  }
+  localSet(NOTES_KEY, data);
 }

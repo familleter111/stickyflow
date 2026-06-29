@@ -173,7 +173,7 @@ export const useUsersStore = create<UsersState>((set, get) => ({
       id: uid(),
       email,
       username: draft.username.trim(),
-      password: draft.password,
+      password: draft.password.trim(),
       status: draft.status,
       role: draft.role,
       createdAt: nowISO(),
@@ -200,6 +200,7 @@ export const useUsersStore = create<UsersState>((set, get) => ({
           ...patch,
           email: patch.email ? patch.email.trim().toLowerCase() : u.email,
           username: patch.username?.trim() ?? u.username,
+          password: patch.password?.trim() ?? u.password,
           updatedAt: nowISO(),
         };
         return updated;
@@ -268,7 +269,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
     );
     // Generic message so we don't reveal which field was wrong.
-    if (!user || user.password !== password) {
+    // Trim both sides so invisible leading/trailing whitespace (e.g. from a
+    // stray space when the account was created) never causes a silent fail.
+    if (!user || user.password.trim() !== password.trim()) {
       return { ok: false, error: "Email ou mot de passe incorrect." };
     }
     if (user.status === "inactive") {

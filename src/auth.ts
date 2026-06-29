@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { User, AuthSession, UserStatus, UserRole } from "./types";
 import { PRIMARY_ADMIN_EMAIL } from "./types";
+import { readUsers, writeUsers } from "./storage";
 
 /* ------------------------------------------------------------------ *
  * SECURITY NOTE — read before shipping
@@ -15,7 +16,6 @@ import { PRIMARY_ADMIN_EMAIL } from "./types";
  *    session cookies, password hashing, and access-control middleware.
  * ------------------------------------------------------------------ */
 
-const USERS_KEY = "mdflow_users";
 const SESSION_KEY = "mdflow_auth_session";
 
 // Stable ids so seeded demo notes can reference their owners.
@@ -80,7 +80,7 @@ function buildSeedUsers(): User[] {
 
 function loadUsers(): User[] {
   try {
-    const raw = localStorage.getItem(USERS_KEY);
+    const raw = readUsers();
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length) {
@@ -104,11 +104,7 @@ function loadUsers(): User[] {
 }
 
 function saveUsers(users: User[]) {
-  try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  } catch {
-    /* ignore */
-  }
+  writeUsers(JSON.stringify(users));
 }
 
 function loadSession(): AuthSession | null {

@@ -8,15 +8,14 @@ import type {
 } from "./types";
 import { STATUS_ORDER } from "./types";
 import { buildSeedNotes } from "./seed";
-
-const STORAGE_KEY = "mdflow_notes";
+import { readNotes, writeNotes } from "./storage";
 
 const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
 function loadNotes(): Note[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readNotes();
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed as Note[];
@@ -25,20 +24,12 @@ function loadNotes(): Note[] {
     /* ignore corrupt storage */
   }
   const seed = buildSeedNotes();
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-  } catch {
-    /* ignore */
-  }
+  persist(seed);
   return seed;
 }
 
 function persist(notes: Note[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-  } catch {
-    /* ignore */
-  }
+  writeNotes(JSON.stringify(notes));
 }
 
 export type NoteDraft = Omit<Note, "id" | "createdAt" | "updatedAt">;

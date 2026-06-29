@@ -1,13 +1,13 @@
 import type { NoteStatus } from "../types";
 import { STATUS_LABELS } from "../types";
-import { useStore, counts } from "../store";
+import { useStore, useMyNotes, counts } from "../store";
 
 type Key = NoteStatus | "all";
 
 export default function StatusFilterBar() {
   const statusFilter = useStore((s) => s.statusFilter);
   const setStatusFilter = useStore((s) => s.setStatusFilter);
-  const notes = useStore((s) => s.notes);
+  const notes = useMyNotes();
   const c = counts(notes);
 
   const tabs: { key: Key; label: string; count: number }[] = [

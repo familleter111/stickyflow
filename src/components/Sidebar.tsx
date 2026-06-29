@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import type { ViewKey } from "../types";
 import { TAGS } from "../types";
-import { useStore, counts } from "../store";
+import { useStore, useMyNotes, counts } from "../store";
 
 type Props = {
   onOpenWidget: () => void;
@@ -25,7 +25,7 @@ function sameView(a: ViewKey, b: ViewKey) {
 export default function Sidebar({ onOpenWidget }: Props) {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
-  const notes = useStore((s) => s.notes);
+  const notes = useMyNotes();
   const c = counts(notes);
 
   const nav: { key: ViewKey; label: string; icon: typeof FileText; count: number }[] =

@@ -24,6 +24,7 @@ import {
   TAGS,
 } from "../types";
 import { useStore, type NoteDraft } from "../store";
+import { useCurrentUser } from "../auth";
 import { useEscape } from "../lib/hooks";
 
 type Props = {
@@ -37,6 +38,7 @@ const uid = () =>
 
 function emptyDraft(): NoteDraft {
   return {
+    userId: "", // filled in from the current user on save
     title: "",
     content: "",
     status: "todo",
@@ -55,6 +57,7 @@ export default function NoteFormPanel({ mode, note, onClose }: Props) {
   const addNote = useStore((s) => s.addNote);
   const updateNote = useStore((s) => s.updateNote);
   const pushToast = useStore((s) => s.pushToast);
+  const currentUser = useCurrentUser();
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<NoteDraft>(emptyDraft);
@@ -71,6 +74,7 @@ export default function NoteFormPanel({ mode, note, onClose }: Props) {
     if (mode === "edit" && note) {
       const { ...rest } = note;
       setDraft({
+        userId: rest.userId,
         title: rest.title,
         content: rest.content,
         status: rest.status,
@@ -99,6 +103,8 @@ export default function NoteFormPanel({ mode, note, onClose }: Props) {
   const save = () => {
     const cleaned: NoteDraft = {
       ...draft,
+      // Data isolation: new notes always belong to the current user.
+      userId: mode === "edit" ? draft.userId : currentUser?.id ?? draft.userId,
       title: draft.title.trim() || "Sans titre",
       checklist: draft.checklist
         .filter((c) => c.label.trim())

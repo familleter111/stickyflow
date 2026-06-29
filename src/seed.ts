@@ -1,4 +1,5 @@
 import type { Note, ChecklistItem } from "./types";
+import { SEED_IDS } from "./auth";
 
 const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -23,7 +24,7 @@ export function buildSeedNotes(): Note[] {
     reminderAt: null as string | null,
   };
 
-  return [
+  const notes: Omit<Note, "userId">[] = [
     {
       ...base,
       id: uid(),
@@ -211,5 +212,27 @@ export function buildSeedNotes(): Note[] {
       createdAt: iso(6000),
       updatedAt: iso(2000),
     },
-  ] as Note[];
+  ] as Omit<Note, "userId">[];
+
+  // Assign owners: most demo notes go to "marie", a few to "lucas",
+  // and the last couple to the admin account so each user has data.
+  const owners = [
+    SEED_IDS.marie,
+    SEED_IDS.marie,
+    SEED_IDS.marie,
+    SEED_IDS.marie,
+    SEED_IDS.marie,
+    SEED_IDS.marie,
+    SEED_IDS.lucas,
+    SEED_IDS.lucas,
+    SEED_IDS.lucas,
+    SEED_IDS.lucas,
+    SEED_IDS.admin,
+    SEED_IDS.admin,
+  ];
+
+  return notes.map((n, i) => ({
+    ...n,
+    userId: owners[i % owners.length],
+  }));
 }

@@ -9,7 +9,7 @@ import {
   FileText,
   Check,
 } from "lucide-react";
-import { useStore } from "../store";
+import { useStore, useMyNotes } from "../store";
 import { STATUS_STYLES } from "../types";
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
 };
 
 export default function FloatingWidget({ onClose, onNewNote }: Props) {
-  const notes = useStore((s) => s.notes);
+  const notes = useMyNotes();
   const toggleChecklistItem = useStore((s) => s.toggleChecklistItem);
   const [minimized, setMinimized] = useState(false);
   const [query, setQuery] = useState("");

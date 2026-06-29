@@ -1,8 +1,8 @@
 import { FileText, Star, Trash2, Circle, Loader, CheckCircle2 } from "lucide-react";
-import { useStore, counts } from "../store";
+import { useStore, useMyNotes, counts } from "../store";
 
 export default function StatsSummary() {
-  const notes = useStore((s) => s.notes);
+  const notes = useMyNotes();
   const setStatusFilter = useStore((s) => s.setStatusFilter);
   const setView = useStore((s) => s.setView);
   const c = counts(notes);

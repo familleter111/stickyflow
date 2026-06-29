@@ -9,7 +9,7 @@ import type {
 import { STATUS_ORDER } from "./types";
 import { buildSeedNotes } from "./seed";
 
-const STORAGE_KEY = "stickyflow.notes.v1";
+const STORAGE_KEY = "stickyflow_notes";
 
 const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -54,12 +54,18 @@ type StatusFilter = NoteStatus | "all";
 
 type State = {
   notes: Note[];
+  /** Id of the user whose board is currently displayed (data isolation). */
+  currentUserId: string | null;
   view: ViewKey;
   search: string;
   statusFilter: StatusFilter;
   sort: SortKey;
   sortDir: "asc" | "desc";
   toasts: Toast[];
+
+  setCurrentUser: (userId: string | null) => void;
+  getNotesByUser: (userId: string) => Note[];
+  deleteUserNotes: (userId: string) => void;
 
   setView: (v: ViewKey) => void;
   setSearch: (s: string) => void;
@@ -95,12 +101,25 @@ function touch(notes: Note[], id: string, patch: Partial<Note>): Note[] {
 
 export const useStore = create<State>((set, get) => ({
   notes: loadNotes(),
+  currentUserId: null,
   view: "all",
   search: "",
   statusFilter: "all",
   sort: "updated",
   sortDir: "desc",
   toasts: [],
+
+  setCurrentUser: (userId) => set({ currentUserId: userId }),
+
+  getNotesByUser: (userId) =>
+    get().notes.filter((n) => n.userId === userId),
+
+  deleteUserNotes: (userId) =>
+    set((st) => {
+      const notes = st.notes.filter((n) => n.userId !== userId);
+      persist(notes);
+      return { notes };
+    }),
 
   setView: (v) => set({ view: v }),
   setSearch: (s) => set({ search: s }),
@@ -245,8 +264,12 @@ export const useStore = create<State>((set, get) => ({
 
 /** Derived selectors (pure helpers). */
 export function visibleNotes(st: State): Note[] {
-  const { notes, view, search, statusFilter, sort, sortDir } = st;
-  let list = notes.slice();
+  const { notes, currentUserId, view, search, statusFilter, sort, sortDir } =
+    st;
+  // Data isolation: only ever operate on the current user's notes.
+  let list = currentUserId
+    ? notes.filter((n) => n.userId === currentUserId)
+    : [];
 
   // view scope
   if (view === "trash") {
@@ -296,6 +319,15 @@ export function visibleNotes(st: State): Note[] {
   });
 
   return list;
+}
+
+/** Hook: the current user's notes (already isolated by userId). */
+export function useMyNotes(): Note[] {
+  return useStore((st) =>
+    st.currentUserId
+      ? st.notes.filter((n) => n.userId === st.currentUserId)
+      : [],
+  );
 }
 
 export function counts(notes: Note[]) {

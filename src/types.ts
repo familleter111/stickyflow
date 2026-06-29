@@ -17,6 +17,8 @@ export type ChecklistItem = {
 
 export type Note = {
   id: string;
+  /** Owner of the note. A normal user only ever sees notes with their own id. */
+  userId: string;
   title: string;
   content: string;
   status: NoteStatus;
@@ -157,3 +159,34 @@ export type ViewKey =
   | "archived"
   | "trash"
   | { tag: string };
+
+/* ------------------------------------------------------------------ */
+/* Authentication & users                                              */
+/* ------------------------------------------------------------------ */
+
+export type UserStatus = "active" | "inactive";
+export type UserRole = "admin" | "user";
+
+export type User = {
+  id: string;
+  email: string;
+  username: string;
+  // Demo only. Passwords must be hashed server-side in production —
+  // never store plain-text passwords in a real application.
+  password: string;
+  status: UserStatus;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthSession = {
+  userId: string;
+  email: string;
+  role: UserRole;
+  rememberMe: boolean;
+  loggedInAt: string;
+};
+
+/** Email of the built-in primary admin account (cannot be deleted). */
+export const PRIMARY_ADMIN_EMAIL = "admin@email.com";

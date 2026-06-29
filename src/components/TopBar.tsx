@@ -12,6 +12,7 @@ import type { SortKey } from "../types";
 import { SORT_LABELS } from "../types";
 import { useStore } from "../store";
 import { useOnClickOutside } from "../lib/hooks";
+import UserMenu from "./UserMenu";
 
 type Props = {
   onNewNote: () => void;
@@ -150,6 +151,10 @@ export default function TopBar({ onNewNote }: Props) {
         <Plus className="h-[18px] w-[18px]" />
         Nouvelle note
       </button>
+
+      <div className="ml-1">
+        <UserMenu />
+      </div>
     </div>
   );
 }

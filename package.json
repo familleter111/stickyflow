@@ -1,0 +1,78 @@
+{
+  "name": "stickyflow",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "StickyFlow - notes adhésives modernes",
+  "author": "StickyFlow",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "pack": "npm run build && electron-packager . StickyFlow --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=\"/src$\" --ignore=\"/release\" --ignore=\"/\\.\" --ignore=\"tsconfig\" --ignore=\"vite\\.config\" --ignore=\"tailwind\\.config\" --ignore=\"postcss\\.config\"",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "lucide-react": "^0.456.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.stickyflow.app",
+    "productName": "StickyFlow",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StickyFlow"
+    },
+    "portable": {
+      "artifactName": "StickyFlow-${version}-portable.exe"
+    }
+  }
+}

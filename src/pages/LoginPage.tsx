@@ -148,7 +148,7 @@ export default function LoginPage() {
                 📝
               </div>
               <span className="text-2xl font-extrabold tracking-tight text-slate-800">
-                Sticky<span className="text-blue-600">Flow</span>
+                MD<span className="text-blue-600">Flow</span>
               </span>
             </div>
 
